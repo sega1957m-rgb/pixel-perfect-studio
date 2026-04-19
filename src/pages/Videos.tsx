@@ -4,7 +4,7 @@ import { Play, Film } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import { cn } from "@/lib/utils";
 
-type Quality = "4K" | "HD" | "Studio";
+type Quality = "4K" | "Full HD" | "HD" | "SD";
 
 interface Video {
   id: string;
@@ -19,7 +19,7 @@ interface Video {
 
 interface StudioOpt { id: string; name: string; }
 
-const QUALITIES: (Quality | "ALL")[] = ["ALL", "4K", "HD", "Studio"];
+const QUALITIES: (Quality | "ALL")[] = ["ALL", "4K", "Full HD", "HD", "SD"];
 
 const Videos = () => {
   const [videos, setVideos] = useState<Video[]>([]);
