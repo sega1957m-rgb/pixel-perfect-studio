@@ -82,6 +82,99 @@ export type Database = {
           },
         ]
       }
+      studio_albums: {
+        Row: {
+          album_id: string
+          created_at: string
+          studio_id: string
+        }
+        Insert: {
+          album_id: string
+          created_at?: string
+          studio_id: string
+        }
+        Update: {
+          album_id?: string
+          created_at?: string
+          studio_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studio_albums_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "albums"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "studio_albums_studio_id_fkey"
+            columns: ["studio_id"]
+            isOneToOne: false
+            referencedRelation: "studios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      studio_videos: {
+        Row: {
+          created_at: string
+          studio_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          studio_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          studio_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studio_videos_studio_id_fkey"
+            columns: ["studio_id"]
+            isOneToOne: false
+            referencedRelation: "studios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "studio_videos_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      studios: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
