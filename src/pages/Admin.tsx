@@ -13,9 +13,11 @@ import { toast } from "sonner";
 import { Trash2, Upload } from "lucide-react";
 import StudioManager from "@/components/admin/StudioManager";
 import StudioAssign from "@/components/admin/StudioAssign";
+import StudioPicker from "@/components/admin/StudioPicker";
 
+type Quality = "4K" | "Full HD" | "HD" | "SD";
 type Album = { id: string; name: string; description: string | null; cover_url: string | null };
-type Video = { id: string; title: string; quality: "4K" | "HD" | "Studio" };
+type Video = { id: string; title: string; quality: Quality };
 type Studio = { id: string; name: string };
 
 const Admin = () => {
@@ -30,13 +32,15 @@ const Admin = () => {
 
   const [selectedAlbumId, setSelectedAlbumId] = useState<string>("");
   const [photoFiles, setPhotoFiles] = useState<FileList | null>(null);
+  const [photoStudioIds, setPhotoStudioIds] = useState<string[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const [videoTitle, setVideoTitle] = useState("");
   const [videoDesc, setVideoDesc] = useState("");
-  const [videoQuality, setVideoQuality] = useState<"4K" | "HD" | "Studio">("HD");
+  const [videoQuality, setVideoQuality] = useState<Quality>("HD");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [thumbFile, setThumbFile] = useState<File | null>(null);
+  const [videoStudioIds, setVideoStudioIds] = useState<string[]>([]);
   const [uploadingVideo, setUploadingVideo] = useState(false);
 
   useEffect(() => {
@@ -114,8 +118,21 @@ const Admin = () => {
       if (album && !album.cover_url && firstUrl) {
         await supabase.from("albums").update({ cover_url: firstUrl }).eq("id", selectedAlbumId);
       }
+      // Sync studio assignments for the album (add new ones, keep existing)
+      if (photoStudioIds.length > 0) {
+        const { data: existing } = await supabase
+          .from("studio_albums").select("studio_id").eq("album_id", selectedAlbumId);
+        const existingIds = new Set(((existing as any[]) || []).map(r => r.studio_id));
+        const toAdd = photoStudioIds.filter(id => !existingIds.has(id))
+          .map(sid => ({ album_id: selectedAlbumId, studio_id: sid }));
+        if (toAdd.length > 0) {
+          const { error: linkErr } = await supabase.from("studio_albums").insert(toAdd);
+          if (linkErr) throw linkErr;
+        }
+      }
       toast.success(`${photoFiles.length} photo(s) ajoutée(s)`);
       setPhotoFiles(null);
+      setPhotoStudioIds([]);
       (document.getElementById("photo-input") as HTMLInputElement).value = "";
       refresh();
     } catch (err: any) {
@@ -144,13 +161,20 @@ const Admin = () => {
         thumbUrl = supabase.storage.from("thumbnails").getPublicUrl(thumbPath).data.publicUrl;
       }
 
-      const { error: dbErr } = await supabase.from("videos").insert({
+      const { data: inserted, error: dbErr } = await supabase.from("videos").insert({
         title: videoTitle, description: videoDesc || null, quality: videoQuality,
         video_url: videoUrl, storage_path: vPath, thumbnail_url: thumbUrl, thumbnail_path: thumbPath,
-      });
+      }).select("id").single();
       if (dbErr) throw dbErr;
+
+      if (inserted && videoStudioIds.length > 0) {
+        const rows = videoStudioIds.map(sid => ({ video_id: inserted.id, studio_id: sid }));
+        const { error: linkErr } = await supabase.from("studio_videos").insert(rows);
+        if (linkErr) throw linkErr;
+      }
+
       toast.success("Vidéo ajoutée");
-      setVideoTitle(""); setVideoDesc(""); setVideoFile(null); setThumbFile(null);
+      setVideoTitle(""); setVideoDesc(""); setVideoFile(null); setThumbFile(null); setVideoStudioIds([]);
       refresh();
     } catch (err: any) {
       toast.error(err.message);
@@ -195,6 +219,7 @@ const Admin = () => {
                 </SelectContent>
               </Select>
               <Input id="photo-input" type="file" accept="image/*" multiple onChange={e => setPhotoFiles(e.target.files)} required />
+              <StudioPicker studios={studios} selected={photoStudioIds} onChange={setPhotoStudioIds} label="Affecter à des studios (optionnel)" />
               <Button type="submit" disabled={uploadingPhoto || !selectedAlbumId}>
                 <Upload className="h-4 w-4 mr-2" /> {uploadingPhoto ? "Envoi…" : "Uploader"}
               </Button>
@@ -230,8 +255,9 @@ const Admin = () => {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="4K">4K</SelectItem>
+                  <SelectItem value="Full HD">Full HD</SelectItem>
                   <SelectItem value="HD">HD</SelectItem>
-                  <SelectItem value="Studio">Studio</SelectItem>
+                  <SelectItem value="SD">SD</SelectItem>
                 </SelectContent>
               </Select>
               <div>
@@ -242,6 +268,7 @@ const Admin = () => {
                 <Label className="text-xs">Miniature (image)</Label>
                 <Input type="file" accept="image/*" onChange={e => setThumbFile(e.target.files?.[0] || null)} />
               </div>
+              <StudioPicker studios={studios} selected={videoStudioIds} onChange={setVideoStudioIds} label="Affecter à des studios (optionnel)" />
               <Button type="submit" disabled={uploadingVideo}>
                 <Upload className="h-4 w-4 mr-2" /> {uploadingVideo ? "Envoi…" : "Uploader la vidéo"}
               </Button>

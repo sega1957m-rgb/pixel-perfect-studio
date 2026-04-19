@@ -253,7 +253,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
-      video_quality: "4K" | "HD" | "Studio"
+      video_quality: "4K" | "Full HD" | "HD" | "SD"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -382,7 +382,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
-      video_quality: ["4K", "HD", "Studio"],
+      video_quality: ["4K", "Full HD", "HD", "SD"],
     },
   },
 } as const
