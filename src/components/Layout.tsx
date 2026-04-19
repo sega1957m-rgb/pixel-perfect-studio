@@ -24,6 +24,7 @@ const Layout = () => {
             <NavLink to="/" end className={navClass}>Accueil</NavLink>
             <NavLink to="/photos" className={navClass}>Photos</NavLink>
             <NavLink to="/videos" className={navClass}>Vidéos</NavLink>
+            <NavLink to="/studios" className={navClass}>Studios</NavLink>
           </nav>
           <div className="flex items-center gap-2">
             {isAdmin && (

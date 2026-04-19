@@ -9,6 +9,8 @@ import Index from "./pages/Index.tsx";
 import Photos from "./pages/Photos";
 import AlbumView from "./pages/AlbumView";
 import Videos from "./pages/Videos";
+import Studios from "./pages/Studios";
+import StudioView from "./pages/StudioView";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound.tsx";
@@ -28,6 +30,8 @@ const App = () => (
               <Route path="/photos" element={<Photos />} />
               <Route path="/photos/:id" element={<AlbumView />} />
               <Route path="/videos" element={<Videos />} />
+              <Route path="/studios" element={<Studios />} />
+              <Route path="/studios/:id" element={<StudioView />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="*" element={<NotFound />} />
