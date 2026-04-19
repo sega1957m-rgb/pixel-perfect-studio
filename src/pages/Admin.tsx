@@ -11,26 +11,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Trash2, Upload } from "lucide-react";
+import StudioManager from "@/components/admin/StudioManager";
+import StudioAssign from "@/components/admin/StudioAssign";
 
 type Album = { id: string; name: string; description: string | null; cover_url: string | null };
 type Video = { id: string; title: string; quality: "4K" | "HD" | "Studio" };
+type Studio = { id: string; name: string };
 
 const Admin = () => {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const [albums, setAlbums] = useState<Album[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
+  const [studios, setStudios] = useState<Studio[]>([]);
 
-  // Album form
   const [albumName, setAlbumName] = useState("");
   const [albumDesc, setAlbumDesc] = useState("");
 
-  // Photo upload
   const [selectedAlbumId, setSelectedAlbumId] = useState<string>("");
   const [photoFiles, setPhotoFiles] = useState<FileList | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
-  // Video form
   const [videoTitle, setVideoTitle] = useState("");
   const [videoDesc, setVideoDesc] = useState("");
   const [videoQuality, setVideoQuality] = useState<"4K" | "HD" | "Studio">("HD");
@@ -43,12 +44,14 @@ const Admin = () => {
   }, [user, loading, navigate]);
 
   const refresh = async () => {
-    const [{ data: a }, { data: v }] = await Promise.all([
+    const [{ data: a }, { data: v }, { data: s }] = await Promise.all([
       supabase.from("albums").select("*").order("created_at", { ascending: false }),
       supabase.from("videos").select("id,title,quality").order("created_at", { ascending: false }),
+      supabase.from("studios").select("id,name").order("name"),
     ]);
     setAlbums((a as Album[]) || []);
     setVideos((v as Video[]) || []);
+    setStudios((s as Studio[]) || []);
   };
 
   useEffect(() => { if (isAdmin) refresh(); }, [isAdmin]);
@@ -108,7 +111,6 @@ const Admin = () => {
         });
         if (dbErr) throw dbErr;
       }
-      // Set cover if missing
       if (album && !album.cover_url && firstUrl) {
         await supabase.from("albums").update({ cover_url: firstUrl }).eq("id", selectedAlbumId);
       }
@@ -170,6 +172,7 @@ const Admin = () => {
         <TabsList>
           <TabsTrigger value="photos">Photos & albums</TabsTrigger>
           <TabsTrigger value="videos">Vidéos</TabsTrigger>
+          <TabsTrigger value="studios">Studios</TabsTrigger>
         </TabsList>
 
         <TabsContent value="photos" className="space-y-8 mt-6">
@@ -200,13 +203,16 @@ const Admin = () => {
 
           <Card className="p-6">
             <h2 className="font-serif text-xl mb-4">Albums existants</h2>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {albums.map(a => (
-                <div key={a.id} className="flex items-center justify-between p-3 border border-border rounded-sm">
-                  <span>{a.name}</span>
-                  <Button variant="ghost" size="sm" onClick={() => deleteAlbum(a.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                <div key={a.id} className="p-3 border border-border rounded-sm space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span>{a.name}</span>
+                    <Button variant="ghost" size="sm" onClick={() => deleteAlbum(a.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                  <StudioAssign kind="album" itemId={a.id} studios={studios} />
                 </div>
               ))}
               {albums.length === 0 && <p className="text-sm text-muted-foreground">Aucun album.</p>}
@@ -244,18 +250,25 @@ const Admin = () => {
 
           <Card className="p-6">
             <h2 className="font-serif text-xl mb-4">Vidéos existantes</h2>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {videos.map(v => (
-                <div key={v.id} className="flex items-center justify-between p-3 border border-border rounded-sm">
-                  <span>{v.title} <span className="text-xs text-primary ml-2">{v.quality}</span></span>
-                  <Button variant="ghost" size="sm" onClick={() => deleteVideo(v.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                <div key={v.id} className="p-3 border border-border rounded-sm space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span>{v.title} <span className="text-xs text-primary ml-2">{v.quality}</span></span>
+                    <Button variant="ghost" size="sm" onClick={() => deleteVideo(v.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                  <StudioAssign kind="video" itemId={v.id} studios={studios} />
                 </div>
               ))}
               {videos.length === 0 && <p className="text-sm text-muted-foreground">Aucune vidéo.</p>}
             </div>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="studios" className="space-y-8 mt-6">
+          <StudioManager studios={studios} onChange={refresh} />
         </TabsContent>
       </Tabs>
     </div>
