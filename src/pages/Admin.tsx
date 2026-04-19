@@ -13,9 +13,11 @@ import { toast } from "sonner";
 import { Trash2, Upload } from "lucide-react";
 import StudioManager from "@/components/admin/StudioManager";
 import StudioAssign from "@/components/admin/StudioAssign";
+import StudioPicker from "@/components/admin/StudioPicker";
 
+type Quality = "4K" | "Full HD" | "HD" | "SD";
 type Album = { id: string; name: string; description: string | null; cover_url: string | null };
-type Video = { id: string; title: string; quality: "4K" | "HD" | "Studio" };
+type Video = { id: string; title: string; quality: Quality };
 type Studio = { id: string; name: string };
 
 const Admin = () => {
@@ -30,13 +32,15 @@ const Admin = () => {
 
   const [selectedAlbumId, setSelectedAlbumId] = useState<string>("");
   const [photoFiles, setPhotoFiles] = useState<FileList | null>(null);
+  const [photoStudioIds, setPhotoStudioIds] = useState<string[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const [videoTitle, setVideoTitle] = useState("");
   const [videoDesc, setVideoDesc] = useState("");
-  const [videoQuality, setVideoQuality] = useState<"4K" | "HD" | "Studio">("HD");
+  const [videoQuality, setVideoQuality] = useState<Quality>("HD");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [thumbFile, setThumbFile] = useState<File | null>(null);
+  const [videoStudioIds, setVideoStudioIds] = useState<string[]>([]);
   const [uploadingVideo, setUploadingVideo] = useState(false);
 
   useEffect(() => {
