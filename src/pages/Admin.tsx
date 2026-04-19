@@ -118,8 +118,21 @@ const Admin = () => {
       if (album && !album.cover_url && firstUrl) {
         await supabase.from("albums").update({ cover_url: firstUrl }).eq("id", selectedAlbumId);
       }
+      // Sync studio assignments for the album (add new ones, keep existing)
+      if (photoStudioIds.length > 0) {
+        const { data: existing } = await supabase
+          .from("studio_albums").select("studio_id").eq("album_id", selectedAlbumId);
+        const existingIds = new Set(((existing as any[]) || []).map(r => r.studio_id));
+        const toAdd = photoStudioIds.filter(id => !existingIds.has(id))
+          .map(sid => ({ album_id: selectedAlbumId, studio_id: sid }));
+        if (toAdd.length > 0) {
+          const { error: linkErr } = await supabase.from("studio_albums").insert(toAdd);
+          if (linkErr) throw linkErr;
+        }
+      }
       toast.success(`${photoFiles.length} photo(s) ajoutée(s)`);
       setPhotoFiles(null);
+      setPhotoStudioIds([]);
       (document.getElementById("photo-input") as HTMLInputElement).value = "";
       refresh();
     } catch (err: any) {
@@ -148,13 +161,20 @@ const Admin = () => {
         thumbUrl = supabase.storage.from("thumbnails").getPublicUrl(thumbPath).data.publicUrl;
       }
 
-      const { error: dbErr } = await supabase.from("videos").insert({
+      const { data: inserted, error: dbErr } = await supabase.from("videos").insert({
         title: videoTitle, description: videoDesc || null, quality: videoQuality,
         video_url: videoUrl, storage_path: vPath, thumbnail_url: thumbUrl, thumbnail_path: thumbPath,
-      });
+      }).select("id").single();
       if (dbErr) throw dbErr;
+
+      if (inserted && videoStudioIds.length > 0) {
+        const rows = videoStudioIds.map(sid => ({ video_id: inserted.id, studio_id: sid }));
+        const { error: linkErr } = await supabase.from("studio_videos").insert(rows);
+        if (linkErr) throw linkErr;
+      }
+
       toast.success("Vidéo ajoutée");
-      setVideoTitle(""); setVideoDesc(""); setVideoFile(null); setThumbFile(null);
+      setVideoTitle(""); setVideoDesc(""); setVideoFile(null); setThumbFile(null); setVideoStudioIds([]);
       refresh();
     } catch (err: any) {
       toast.error(err.message);
