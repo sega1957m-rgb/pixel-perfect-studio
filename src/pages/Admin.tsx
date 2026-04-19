@@ -268,6 +268,7 @@ const Admin = () => {
                 <Label className="text-xs">Miniature (image)</Label>
                 <Input type="file" accept="image/*" onChange={e => setThumbFile(e.target.files?.[0] || null)} />
               </div>
+              <StudioPicker studios={studios} selected={videoStudioIds} onChange={setVideoStudioIds} label="Affecter à des studios (optionnel)" />
               <Button type="submit" disabled={uploadingVideo}>
                 <Upload className="h-4 w-4 mr-2" /> {uploadingVideo ? "Envoi…" : "Uploader la vidéo"}
               </Button>
