@@ -219,6 +219,7 @@ const Admin = () => {
                 </SelectContent>
               </Select>
               <Input id="photo-input" type="file" accept="image/*" multiple onChange={e => setPhotoFiles(e.target.files)} required />
+              <StudioPicker studios={studios} selected={photoStudioIds} onChange={setPhotoStudioIds} label="Affecter à des studios (optionnel)" />
               <Button type="submit" disabled={uploadingPhoto || !selectedAlbumId}>
                 <Upload className="h-4 w-4 mr-2" /> {uploadingPhoto ? "Envoi…" : "Uploader"}
               </Button>
@@ -254,8 +255,9 @@ const Admin = () => {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="4K">4K</SelectItem>
+                  <SelectItem value="Full HD">Full HD</SelectItem>
                   <SelectItem value="HD">HD</SelectItem>
-                  <SelectItem value="Studio">Studio</SelectItem>
+                  <SelectItem value="SD">SD</SelectItem>
                 </SelectContent>
               </Select>
               <div>
