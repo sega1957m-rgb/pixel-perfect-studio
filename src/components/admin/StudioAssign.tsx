@@ -12,32 +12,33 @@ interface Props {
 }
 
 const StudioAssign = ({ kind, itemId, studios }: Props) => {
-  const table = kind === "video" ? "studio_videos" : "studio_albums";
-  const fkCol = kind === "video" ? "video_id" : "album_id";
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from(table).select("studio_id").eq(fkCol, itemId);
+      const { data } = kind === "video"
+        ? await supabase.from("studio_videos").select("studio_id").eq("video_id", itemId)
+        : await supabase.from("studio_albums").select("studio_id").eq("album_id", itemId);
       setSelected(new Set(((data as any[]) || []).map(r => r.studio_id)));
       setLoading(false);
     })();
-  }, [itemId, table, fkCol]);
+  }, [itemId, kind]);
 
   const toggle = async (studioId: string) => {
     const isOn = selected.has(studioId);
     const next = new Set(selected);
     if (isOn) {
       next.delete(studioId);
-      const { error } = await supabase.from(table).delete()
-        .eq(fkCol, itemId).eq("studio_id", studioId);
+      const { error } = kind === "video"
+        ? await supabase.from("studio_videos").delete().eq("video_id", itemId).eq("studio_id", studioId)
+        : await supabase.from("studio_albums").delete().eq("album_id", itemId).eq("studio_id", studioId);
       if (error) { toast.error(error.message); return; }
     } else {
       next.add(studioId);
-      const { error } = await supabase.from(table).insert({
-        [fkCol]: itemId, studio_id: studioId,
-      } as any);
+      const { error } = kind === "video"
+        ? await supabase.from("studio_videos").insert({ video_id: itemId, studio_id: studioId })
+        : await supabase.from("studio_albums").insert({ album_id: itemId, studio_id: studioId });
       if (error) { toast.error(error.message); return; }
     }
     setSelected(next);
