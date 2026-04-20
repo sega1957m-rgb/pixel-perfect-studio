@@ -9,15 +9,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { Trash2, Upload } from "lucide-react";
 import StudioManager from "@/components/admin/StudioManager";
 import StudioAssign from "@/components/admin/StudioAssign";
 import StudioPicker from "@/components/admin/StudioPicker";
+import InlineEdit from "@/components/admin/InlineEdit";
+import ThumbnailEdit from "@/components/admin/ThumbnailEdit";
+import { uploadWithProgress } from "@/lib/uploadWithProgress";
 
 type Quality = "4K" | "Full HD" | "HD" | "SD";
 type Album = { id: string; name: string; description: string | null; cover_url: string | null };
-type Video = { id: string; title: string; quality: Quality };
+type Video = { id: string; title: string; quality: Quality; thumbnail_url: string | null };
 type Studio = { id: string; name: string };
 
 const Admin = () => {
@@ -34,6 +38,7 @@ const Admin = () => {
   const [photoFiles, setPhotoFiles] = useState<FileList | null>(null);
   const [photoStudioIds, setPhotoStudioIds] = useState<string[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoProgress, setPhotoProgress] = useState({ current: 0, total: 0, percent: 0 });
 
   const [videoTitle, setVideoTitle] = useState("");
   const [videoDesc, setVideoDesc] = useState("");
@@ -42,6 +47,8 @@ const Admin = () => {
   const [thumbFile, setThumbFile] = useState<File | null>(null);
   const [videoStudioIds, setVideoStudioIds] = useState<string[]>([]);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [thumbProgress, setThumbProgress] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) navigate("/auth");
@@ -50,7 +57,7 @@ const Admin = () => {
   const refresh = async () => {
     const [{ data: a }, { data: v }, { data: s }] = await Promise.all([
       supabase.from("albums").select("*").order("created_at", { ascending: false }),
-      supabase.from("videos").select("id,title,quality").order("created_at", { ascending: false }),
+      supabase.from("videos").select("id,title,quality,thumbnail_url").order("created_at", { ascending: false }),
       supabase.from("studios").select("id,name").order("name"),
     ]);
     setAlbums((a as Album[]) || []);
@@ -91,6 +98,16 @@ const Admin = () => {
     else { toast.success("Album créé"); setAlbumName(""); setAlbumDesc(""); refresh(); }
   };
 
+  const renameAlbum = async (id: string, name: string) => {
+    const { error } = await supabase.from("albums").update({ name }).eq("id", id);
+    if (error) toast.error(error.message); else { toast.success("Album renommé"); refresh(); }
+  };
+
+  const updateAlbumCover = async (id: string, url: string) => {
+    const { error } = await supabase.from("albums").update({ cover_url: url }).eq("id", id);
+    if (error) toast.error(error.message); else refresh();
+  };
+
   const deleteAlbum = async (id: string) => {
     if (!confirm("Supprimer cet album et toutes ses photos ?")) return;
     const { error } = await supabase.from("albums").delete().eq("id", id);
@@ -101,13 +118,18 @@ const Admin = () => {
     e.preventDefault();
     if (!selectedAlbumId || !photoFiles?.length) return;
     setUploadingPhoto(true);
+    const total = photoFiles.length;
+    setPhotoProgress({ current: 0, total, percent: 0 });
     try {
       const album = albums.find(a => a.id === selectedAlbumId);
       let firstUrl: string | null = null;
-      for (const file of Array.from(photoFiles)) {
+      const files = Array.from(photoFiles);
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         const path = `${selectedAlbumId}/${crypto.randomUUID()}-${file.name}`;
-        const { error: upErr } = await supabase.storage.from("photos").upload(path, file);
-        if (upErr) throw upErr;
+        await uploadWithProgress("photos", path, file, (p) =>
+          setPhotoProgress({ current: i + 1, total, percent: p })
+        );
         const { data: { publicUrl } } = supabase.storage.from("photos").getPublicUrl(path);
         if (!firstUrl) firstUrl = publicUrl;
         const { error: dbErr } = await supabase.from("photos").insert({
@@ -118,7 +140,6 @@ const Admin = () => {
       if (album && !album.cover_url && firstUrl) {
         await supabase.from("albums").update({ cover_url: firstUrl }).eq("id", selectedAlbumId);
       }
-      // Sync studio assignments for the album (add new ones, keep existing)
       if (photoStudioIds.length > 0) {
         const { data: existing } = await supabase
           .from("studio_albums").select("studio_id").eq("album_id", selectedAlbumId);
@@ -130,7 +151,7 @@ const Admin = () => {
           if (linkErr) throw linkErr;
         }
       }
-      toast.success(`${photoFiles.length} photo(s) ajoutée(s)`);
+      toast.success(`${total} photo(s) ajoutée(s)`);
       setPhotoFiles(null);
       setPhotoStudioIds([]);
       (document.getElementById("photo-input") as HTMLInputElement).value = "";
@@ -139,6 +160,7 @@ const Admin = () => {
       toast.error(err.message);
     } finally {
       setUploadingPhoto(false);
+      setPhotoProgress({ current: 0, total: 0, percent: 0 });
     }
   };
 
@@ -146,18 +168,18 @@ const Admin = () => {
     e.preventDefault();
     if (!videoFile) return;
     setUploadingVideo(true);
+    setVideoProgress(0);
+    setThumbProgress(0);
     try {
       const vPath = `${crypto.randomUUID()}-${videoFile.name}`;
-      const { error: vErr } = await supabase.storage.from("videos").upload(vPath, videoFile);
-      if (vErr) throw vErr;
+      await uploadWithProgress("videos", vPath, videoFile, setVideoProgress);
       const { data: { publicUrl: videoUrl } } = supabase.storage.from("videos").getPublicUrl(vPath);
 
       let thumbUrl: string | null = null;
       let thumbPath: string | null = null;
       if (thumbFile) {
         thumbPath = `${crypto.randomUUID()}-${thumbFile.name}`;
-        const { error: tErr } = await supabase.storage.from("thumbnails").upload(thumbPath, thumbFile);
-        if (tErr) throw tErr;
+        await uploadWithProgress("thumbnails", thumbPath, thumbFile, setThumbProgress);
         thumbUrl = supabase.storage.from("thumbnails").getPublicUrl(thumbPath).data.publicUrl;
       }
 
@@ -180,7 +202,19 @@ const Admin = () => {
       toast.error(err.message);
     } finally {
       setUploadingVideo(false);
+      setVideoProgress(0);
+      setThumbProgress(0);
     }
+  };
+
+  const renameVideo = async (id: string, title: string) => {
+    const { error } = await supabase.from("videos").update({ title }).eq("id", id);
+    if (error) toast.error(error.message); else { toast.success("Vidéo renommée"); refresh(); }
+  };
+
+  const updateVideoThumb = async (id: string, url: string, path: string) => {
+    const { error } = await supabase.from("videos").update({ thumbnail_url: url, thumbnail_path: path }).eq("id", id);
+    if (error) toast.error(error.message); else refresh();
   };
 
   const deleteVideo = async (id: string) => {
@@ -220,8 +254,17 @@ const Admin = () => {
               </Select>
               <Input id="photo-input" type="file" accept="image/*" multiple onChange={e => setPhotoFiles(e.target.files)} required />
               <StudioPicker studios={studios} selected={photoStudioIds} onChange={setPhotoStudioIds} label="Affecter à des studios (optionnel)" />
+              {uploadingPhoto && (
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Photo {photoProgress.current} / {photoProgress.total}</span>
+                    <span>{photoProgress.percent}%</span>
+                  </div>
+                  <Progress value={photoProgress.percent} className="h-2" />
+                </div>
+              )}
               <Button type="submit" disabled={uploadingPhoto || !selectedAlbumId}>
-                <Upload className="h-4 w-4 mr-2" /> {uploadingPhoto ? "Envoi…" : "Uploader"}
+                <Upload className="h-4 w-4 mr-2" /> {uploadingPhoto ? `Envoi… ${photoProgress.percent}%` : "Uploader"}
               </Button>
             </form>
           </Card>
@@ -231,12 +274,18 @@ const Admin = () => {
             <div className="space-y-3">
               {albums.map(a => (
                 <div key={a.id} className="p-3 border border-border rounded-sm space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span>{a.name}</span>
+                  <div className="flex items-center justify-between gap-3">
+                    <InlineEdit value={a.name} onSave={(n) => renameAlbum(a.id, n)} />
                     <Button variant="ghost" size="sm" onClick={() => deleteAlbum(a.id)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
+                  <ThumbnailEdit
+                    bucket="photos"
+                    currentUrl={a.cover_url}
+                    onUploaded={(url) => updateAlbumCover(a.id, url)}
+                    label="Couverture"
+                  />
                   <StudioAssign kind="album" itemId={a.id} studios={studios} />
                 </div>
               ))}
@@ -269,8 +318,26 @@ const Admin = () => {
                 <Input type="file" accept="image/*" onChange={e => setThumbFile(e.target.files?.[0] || null)} />
               </div>
               <StudioPicker studios={studios} selected={videoStudioIds} onChange={setVideoStudioIds} label="Affecter à des studios (optionnel)" />
+              {uploadingVideo && (
+                <div className="space-y-2">
+                  <div>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Vidéo</span><span>{videoProgress}%</span>
+                    </div>
+                    <Progress value={videoProgress} className="h-2" />
+                  </div>
+                  {thumbFile && (
+                    <div>
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Miniature</span><span>{thumbProgress}%</span>
+                      </div>
+                      <Progress value={thumbProgress} className="h-2" />
+                    </div>
+                  )}
+                </div>
+              )}
               <Button type="submit" disabled={uploadingVideo}>
-                <Upload className="h-4 w-4 mr-2" /> {uploadingVideo ? "Envoi…" : "Uploader la vidéo"}
+                <Upload className="h-4 w-4 mr-2" /> {uploadingVideo ? `Envoi… ${videoProgress}%` : "Uploader la vidéo"}
               </Button>
             </form>
           </Card>
@@ -280,12 +347,20 @@ const Admin = () => {
             <div className="space-y-3">
               {videos.map(v => (
                 <div key={v.id} className="p-3 border border-border rounded-sm space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span>{v.title} <span className="text-xs text-primary ml-2">{v.quality}</span></span>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <InlineEdit value={v.title} onSave={(n) => renameVideo(v.id, n)} />
+                      <span className="text-xs text-primary shrink-0">{v.quality}</span>
+                    </div>
                     <Button variant="ghost" size="sm" onClick={() => deleteVideo(v.id)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
+                  <ThumbnailEdit
+                    bucket="thumbnails"
+                    currentUrl={v.thumbnail_url}
+                    onUploaded={(url, path) => updateVideoThumb(v.id, url, path)}
+                  />
                   <StudioAssign kind="video" itemId={v.id} studios={studios} />
                 </div>
               ))}

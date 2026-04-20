@@ -81,11 +81,17 @@ const PhotoLightbox = ({ photos, index, onClose, onChange }: Props) => {
           <button onClick={reset} className="p-2 hover:text-primary text-foreground" aria-label="Réinitialiser">
             <RotateCcw className="h-5 w-5" />
           </button>
-          <button onClick={onClose} className="p-2 hover:text-primary text-foreground" aria-label="Fermer">
-            <X className="h-6 w-6" />
-          </button>
         </div>
       </div>
+
+      {/* Close button - top right, always visible */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onClose(); }}
+        className="absolute top-4 right-4 z-20 p-2.5 rounded-full bg-background/60 hover:bg-destructive/80 text-foreground hover:text-destructive-foreground transition-colors shadow-lg"
+        aria-label="Fermer"
+      >
+        <X className="h-6 w-6" />
+      </button>
 
       {/* Prev */}
       <button
