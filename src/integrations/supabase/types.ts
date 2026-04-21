@@ -198,6 +198,7 @@ export type Database = {
       }
       videos: {
         Row: {
+          category: Database["public"]["Enums"]["video_category"]
           created_at: string
           description: string | null
           duration_seconds: number | null
@@ -211,6 +212,7 @@ export type Database = {
           video_url: string
         }
         Insert: {
+          category?: Database["public"]["Enums"]["video_category"]
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
@@ -224,6 +226,7 @@ export type Database = {
           video_url: string
         }
         Update: {
+          category?: Database["public"]["Enums"]["video_category"]
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
@@ -253,6 +256,14 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      video_category:
+        | "Scene"
+        | "BTS"
+        | "Interview"
+        | "Bonus Scene"
+        | "Bloopers"
+        | "Striptease"
+        | "Photoshoot"
       video_quality: "4K" | "Full HD" | "HD" | "SD"
     }
     CompositeTypes: {
@@ -382,6 +393,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      video_category: [
+        "Scene",
+        "BTS",
+        "Interview",
+        "Bonus Scene",
+        "Bloopers",
+        "Striptease",
+        "Photoshoot",
+      ],
       video_quality: ["4K", "Full HD", "HD", "SD"],
     },
   },
