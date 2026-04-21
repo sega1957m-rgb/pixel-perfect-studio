@@ -87,10 +87,10 @@ const PhotoLightbox = ({ photos, index, onClose, onChange }: Props) => {
       {/* Close button - top right, always visible */}
       <button
         onClick={(e) => { e.stopPropagation(); onClose(); }}
-        className="absolute top-4 right-4 z-20 p-2.5 rounded-full bg-background/60 hover:bg-destructive/80 text-foreground hover:text-destructive-foreground transition-colors shadow-lg"
+        className="absolute top-4 right-4 z-30 p-3 rounded-full border border-foreground/20 bg-foreground/15 text-primary-foreground hover:bg-foreground/25 transition-colors shadow-lg backdrop-blur-sm"
         aria-label="Fermer"
       >
-        <X className="h-6 w-6" />
+        <X className="h-7 w-7" strokeWidth={2.5} />
       </button>
 
       {/* Prev */}
