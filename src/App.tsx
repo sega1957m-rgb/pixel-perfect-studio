@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import Layout from "@/components/Layout";
+import RequireAuth from "@/components/RequireAuth";
 import Index from "./pages/Index.tsx";
 import Photos from "./pages/Photos";
 import AlbumView from "./pages/AlbumView";
@@ -27,12 +28,12 @@ const App = () => (
           <Routes>
             <Route element={<Layout />}>
               <Route path="/" element={<Index />} />
-              <Route path="/photos" element={<Photos />} />
-              <Route path="/photos/:id" element={<AlbumView />} />
-              <Route path="/videos" element={<Videos />} />
-              <Route path="/studios" element={<Studios />} />
-              <Route path="/studios/:id" element={<StudioView />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/photos" element={<RequireAuth><Photos /></RequireAuth>} />
+              <Route path="/photos/:id" element={<RequireAuth><AlbumView /></RequireAuth>} />
+              <Route path="/videos" element={<RequireAuth><Videos /></RequireAuth>} />
+              <Route path="/studios" element={<RequireAuth><Studios /></RequireAuth>} />
+              <Route path="/studios/:id" element={<RequireAuth><StudioView /></RequireAuth>} />
               <Route path="/admin" element={<Admin />} />
               <Route path="*" element={<NotFound />} />
             </Route>

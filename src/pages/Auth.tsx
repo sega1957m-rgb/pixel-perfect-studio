@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,8 @@ import { useAuth } from "@/hooks/useAuth";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/photos";
   const { user } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
@@ -17,8 +19,8 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user) navigate("/admin");
-  }, [user, navigate]);
+    if (user) navigate(redirectTo);
+  }, [user, navigate, redirectTo]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +29,7 @@ const Auth = () => {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email, password,
-          options: { emailRedirectTo: `${window.location.origin}/admin` },
+          options: { emailRedirectTo: `${window.location.origin}${redirectTo}` },
         });
         if (error) throw error;
         toast.success("Compte créé. Vérifiez vos emails si la confirmation est activée.");
@@ -35,7 +37,7 @@ const Auth = () => {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Connecté");
-        navigate("/admin");
+        navigate(redirectTo);
       }
     } catch (err: any) {
       toast.error(err.message);
@@ -48,7 +50,11 @@ const Auth = () => {
     <div className="container max-w-md py-20">
       <Card className="p-8">
         <h1 className="font-serif text-3xl mb-2">{mode === "signin" ? "Connexion" : "Créer un compte"}</h1>
-        <p className="text-sm text-muted-foreground mb-6">Espace réservé aux administrateurs.</p>
+        <p className="text-sm text-muted-foreground mb-6">
+          {mode === "signin"
+            ? "Connectez-vous pour accéder aux photos et vidéos."
+            : "Créez un compte visiteur pour accéder au contenu."}
+        </p>
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
             <Label htmlFor="email">Email</Label>
@@ -66,7 +72,7 @@ const Auth = () => {
           onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
           className="text-xs text-muted-foreground hover:text-primary mt-4 w-full text-center"
         >
-          {mode === "signin" ? "Pas de compte ? Créer un compte" : "Déjà inscrit ? Se connecter"}
+          {mode === "signin" ? "Pas de compte ? Créer un compte visiteur" : "Déjà inscrit ? Se connecter"}
         </button>
       </Card>
     </div>
