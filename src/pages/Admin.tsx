@@ -20,8 +20,10 @@ import ThumbnailEdit from "@/components/admin/ThumbnailEdit";
 import { uploadWithProgress } from "@/lib/uploadWithProgress";
 
 type Quality = "4K" | "Full HD" | "HD" | "SD";
+type Category = "Scene" | "BTS" | "Interview" | "Bonus Scene" | "Bloopers" | "Striptease" | "Photoshoot";
+const CATEGORIES: Category[] = ["Scene", "BTS", "Interview", "Bonus Scene", "Bloopers", "Striptease", "Photoshoot"];
 type Album = { id: string; name: string; description: string | null; cover_url: string | null };
-type Video = { id: string; title: string; quality: Quality; thumbnail_url: string | null };
+type Video = { id: string; title: string; quality: Quality; category: Category; thumbnail_url: string | null };
 type Studio = { id: string; name: string };
 
 const Admin = () => {
@@ -43,6 +45,7 @@ const Admin = () => {
   const [videoTitle, setVideoTitle] = useState("");
   const [videoDesc, setVideoDesc] = useState("");
   const [videoQuality, setVideoQuality] = useState<Quality>("HD");
+  const [videoCategory, setVideoCategory] = useState<Category>("Scene");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [thumbFile, setThumbFile] = useState<File | null>(null);
   const [videoStudioIds, setVideoStudioIds] = useState<string[]>([]);
@@ -57,7 +60,7 @@ const Admin = () => {
   const refresh = async () => {
     const [{ data: a }, { data: v }, { data: s }] = await Promise.all([
       supabase.from("albums").select("*").order("created_at", { ascending: false }),
-      supabase.from("videos").select("id,title,quality,thumbnail_url").order("created_at", { ascending: false }),
+      supabase.from("videos").select("id,title,quality,category,thumbnail_url").order("created_at", { ascending: false }),
       supabase.from("studios").select("id,name").order("name"),
     ]);
     setAlbums((a as Album[]) || []);
@@ -184,7 +187,7 @@ const Admin = () => {
       }
 
       const { data: inserted, error: dbErr } = await supabase.from("videos").insert({
-        title: videoTitle, description: videoDesc || null, quality: videoQuality,
+        title: videoTitle, description: videoDesc || null, quality: videoQuality, category: videoCategory,
         video_url: videoUrl, storage_path: vPath, thumbnail_url: thumbUrl, thumbnail_path: thumbPath,
       }).select("id").single();
       if (dbErr) throw dbErr;
@@ -197,6 +200,7 @@ const Admin = () => {
 
       toast.success("Vidéo ajoutée");
       setVideoTitle(""); setVideoDesc(""); setVideoFile(null); setThumbFile(null); setVideoStudioIds([]);
+      setVideoCategory("Scene");
       refresh();
     } catch (err: any) {
       toast.error(err.message);
@@ -300,15 +304,29 @@ const Admin = () => {
             <form onSubmit={uploadVideo} className="space-y-3">
               <Input placeholder="Titre" value={videoTitle} onChange={e => setVideoTitle(e.target.value)} required />
               <Textarea placeholder="Description" value={videoDesc} onChange={e => setVideoDesc(e.target.value)} />
-              <Select value={videoQuality} onValueChange={(v: any) => setVideoQuality(v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="4K">4K</SelectItem>
-                  <SelectItem value="Full HD">Full HD</SelectItem>
-                  <SelectItem value="HD">HD</SelectItem>
-                  <SelectItem value="SD">SD</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Qualité</Label>
+                  <Select value={videoQuality} onValueChange={(v: any) => setVideoQuality(v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="4K">4K</SelectItem>
+                      <SelectItem value="Full HD">Full HD</SelectItem>
+                      <SelectItem value="HD">HD</SelectItem>
+                      <SelectItem value="SD">SD</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Catégorie</Label>
+                  <Select value={videoCategory} onValueChange={(v: any) => setVideoCategory(v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
               <div>
                 <Label className="text-xs">Fichier vidéo</Label>
                 <Input type="file" accept="video/*" onChange={e => setVideoFile(e.target.files?.[0] || null)} required />
@@ -348,9 +366,10 @@ const Admin = () => {
               {videos.map(v => (
                 <div key={v.id} className="p-3 border border-border rounded-sm space-y-2">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
                       <InlineEdit value={v.title} onSave={(n) => renameVideo(v.id, n)} />
                       <span className="text-xs text-primary shrink-0">{v.quality}</span>
+                      <span className="text-[10px] tracking-widest uppercase text-muted-foreground border border-border px-2 py-0.5 shrink-0">{v.category}</span>
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => deleteVideo(v.id)}>
                       <Trash2 className="h-4 w-4 text-destructive" />

@@ -15,6 +15,12 @@ interface Props {
 const StudioPicker = ({ studios, selected, onChange, label = "Studios" }: Props) => {
   const [q, setQ] = useState("");
 
+  const matches = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    if (!needle) return [];
+    return studios.filter(s => s.name.toLowerCase().includes(needle)).slice(0, 30);
+  }, [q, studios]);
+
   if (studios.length === 0) {
     return (
       <p className="text-xs text-muted-foreground italic">
@@ -26,12 +32,6 @@ const StudioPicker = ({ studios, selected, onChange, label = "Studios" }: Props)
   const toggle = (id: string) => {
     onChange(selected.includes(id) ? selected.filter(s => s !== id) : [...selected, id]);
   };
-
-  const matches = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    if (!needle) return [];
-    return studios.filter(s => s.name.toLowerCase().includes(needle)).slice(0, 30);
-  }, [q, studios]);
 
   const selectedStudios = studios.filter(s => selected.includes(s.id));
 
