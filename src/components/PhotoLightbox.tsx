@@ -5,6 +5,7 @@ interface Photo {
   id: string;
   url: string;
   title: string | null;
+  type?: "image" | "video";
 }
 
 interface Props {
@@ -22,6 +23,7 @@ const PhotoLightbox = ({ photos, index, onClose, onChange }: Props) => {
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const photo = photos[index];
+  const isVideo = photo?.type === "video" || /\.(mp4|webm|mov|ogg)(\?|$)/i.test(photo?.url || "");
 
   const reset = () => {
     setZoom(1);
@@ -55,19 +57,22 @@ const PhotoLightbox = ({ photos, index, onClose, onChange }: Props) => {
       if (e.key === "Escape") onClose();
       if (e.key === "ArrowRight") onChange((index + 1) % photos.length);
       if (e.key === "ArrowLeft") onChange((index - 1 + photos.length) % photos.length);
-      if (e.key === "+" || e.key === "=") setZoom(z => Math.min(z + 0.5, 5));
-      if (e.key === "-") setZoom(z => Math.max(z - 0.5, 1));
-      if (e.key === "0") reset();
+      if (!isVideo) {
+        if (e.key === "+" || e.key === "=") setZoom(z => Math.min(z + 0.5, 5));
+        if (e.key === "-") setZoom(z => Math.max(z - 0.5, 1));
+        if (e.key === "0") reset();
+      }
       showAndScheduleHide();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [index, photos.length, showAndScheduleHide]);
+  }, [index, photos.length, showAndScheduleHide, isVideo]);
 
   const next = () => onChange((index + 1) % photos.length);
   const prev = () => onChange((index - 1 + photos.length) % photos.length);
 
   const onWheel = (e: React.WheelEvent) => {
+    if (isVideo) return;
     const delta = e.deltaY > 0 ? -0.2 : 0.2;
     setZoom(z => Math.min(5, Math.max(1, z + delta)));
     showAndScheduleHide();
@@ -86,11 +91,9 @@ const PhotoLightbox = ({ photos, index, onClose, onChange }: Props) => {
 
   const onImageClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (zoom === 1) {
-      setZoom(2);
-    } else {
-      reset();
-    }
+    if (isVideo) return;
+    if (zoom === 1) setZoom(2);
+    else reset();
     showAndScheduleHide();
   };
 
@@ -100,43 +103,49 @@ const PhotoLightbox = ({ photos, index, onClose, onChange }: Props) => {
       onClick={onClose}
       onMouseMove={showAndScheduleHide}
     >
+      {/* Top bar */}
       <div
-        className={`absolute top-0 inset-x-0 flex items-center justify-between p-4 pr-20 z-10 transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={`fixed top-0 inset-x-0 flex items-center justify-between p-4 pr-24 z-[90] bg-gradient-to-b from-black/70 to-transparent transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}
         onClick={e => e.stopPropagation()}
       >
-        <p className="text-sm text-white/80 tracking-widest">
+        <p className="text-sm text-white/90 tracking-widest">
           {index + 1} / {photos.length} {photo.title && `· ${photo.title}`}
         </p>
-        <div className="flex items-center gap-2">
-          <button onClick={() => { setZoom(z => Math.max(1, z - 0.5)); showAndScheduleHide(); }} className="p-2 text-white hover:text-primary" aria-label="Zoom -">
-            <ZoomOut className="h-5 w-5" />
-          </button>
-          <span className="text-xs text-white/80 w-12 text-center">{Math.round(zoom * 100)}%</span>
-          <button onClick={() => { setZoom(z => Math.min(5, z + 0.5)); showAndScheduleHide(); }} className="p-2 text-white hover:text-primary" aria-label="Zoom +">
-            <ZoomIn className="h-5 w-5" />
-          </button>
-          <button onClick={() => { reset(); showAndScheduleHide(); }} className="p-2 text-white hover:text-primary" aria-label="Réinitialiser">
-            <RotateCcw className="h-5 w-5" />
-          </button>
-        </div>
+        {!isVideo && (
+          <div className="flex items-center gap-2">
+            <button onClick={() => { setZoom(z => Math.max(1, z - 0.5)); showAndScheduleHide(); }} className="p-2 text-white hover:text-primary" aria-label="Zoom -">
+              <ZoomOut className="h-5 w-5" />
+            </button>
+            <span className="text-xs text-white/80 w-12 text-center">{Math.round(zoom * 100)}%</span>
+            <button onClick={() => { setZoom(z => Math.min(5, z + 0.5)); showAndScheduleHide(); }} className="p-2 text-white hover:text-primary" aria-label="Zoom +">
+              <ZoomIn className="h-5 w-5" />
+            </button>
+            <button onClick={() => { reset(); showAndScheduleHide(); }} className="p-2 text-white hover:text-primary" aria-label="Reset">
+              <RotateCcw className="h-5 w-5" />
+            </button>
+          </div>
+        )}
       </div>
 
+      {/* X button - DIMA fou9 kolchi */}
       <button
         onClick={(e) => { e.stopPropagation(); onClose(); }}
-        className={`fixed top-4 right-4 z-[100] p-3 rounded-full border border-white/40 bg-black/60 text-white hover:bg-red-600 hover:border-red-600 transition-all duration-300 shadow-2xl backdrop-blur-md ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={`fixed top-4 right-4 z-[200] p-3 rounded-full border-2 border-white/60 bg-black/80 text-white hover:bg-red-600 hover:border-red-600 transition-all duration-300 shadow-2xl backdrop-blur-md ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}
         aria-label="Fermer"
       >
-        <X className="h-7 w-7" strokeWidth={2.5} />
+        <X className="h-6 w-6" strokeWidth={2.5} />
       </button>
 
+      {/* Prev */}
       <button
         onClick={(e) => { e.stopPropagation(); prev(); }}
-        className={`absolute left-4 z-10 p-3 rounded-full bg-black/40 hover:bg-primary/30 text-white transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={`fixed left-4 top-1/2 -translate-y-1/2 z-[90] p-3 rounded-full bg-black/60 hover:bg-primary/40 text-white transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}
         aria-label="Précédent"
       >
         <ChevronLeft className="h-6 w-6" />
       </button>
 
+      {/* Media */}
       <div
         className="w-full h-full flex items-center justify-center overflow-hidden"
         onClick={e => e.stopPropagation()}
@@ -145,23 +154,32 @@ const PhotoLightbox = ({ photos, index, onClose, onChange }: Props) => {
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseUp}
-        style={{ cursor: zoom > 1 ? (dragging ? "grabbing" : "zoom-out") : "zoom-in" }}
+        style={{ cursor: isVideo ? "default" : zoom > 1 ? (dragging ? "grabbing" : "zoom-out") : "zoom-in" }}
       >
-        <img
-          src={photo.url}
-          alt={photo.title || ""}
-          draggable={false}
-          onClick={onImageClick}
-          className="max-w-full max-h-full object-contain select-none transition-transform duration-200"
-          style={{
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-          }}
-        />
+        {isVideo ? (
+          <video
+            src={photo.url}
+            controls
+            autoPlay
+            className="max-w-full max-h-full object-contain"
+            onClick={e => e.stopPropagation()}
+          />
+        ) : (
+          <img
+            src={photo.url}
+            alt={photo.title || ""}
+            draggable={false}
+            onClick={onImageClick}
+            className="max-w-full max-h-full object-contain select-none transition-transform duration-200"
+            style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
+          />
+        )}
       </div>
 
+      {/* Next */}
       <button
         onClick={(e) => { e.stopPropagation(); next(); }}
-        className={`absolute right-4 z-10 p-3 rounded-full bg-black/40 hover:bg-primary/30 text-white transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={`fixed right-4 top-1/2 -translate-y-1/2 z-[90] p-3 rounded-full bg-black/60 hover:bg-primary/40 text-white transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}
         aria-label="Suivant"
       >
         <ChevronRight className="h-6 w-6" />
