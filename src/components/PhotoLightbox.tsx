@@ -66,7 +66,7 @@ const PhotoLightbox = ({ photos, index, onClose, onChange }: Props) => {
       onClick={onClose}
     >
       {/* Top bar */}
-      <div className="absolute top-0 inset-x-0 flex items-center justify-between p-4 z-10" onClick={e => e.stopPropagation()}>
+      <div className="absolute top-0 inset-x-0 flex items-center justify-between p-4 pr-20 z-10" onClick={e => e.stopPropagation()}>
         <p className="text-sm text-muted-foreground tracking-widest">
           {index + 1} / {photos.length} {photo.title && `· ${photo.title}`}
         </p>
@@ -87,7 +87,7 @@ const PhotoLightbox = ({ photos, index, onClose, onChange }: Props) => {
       {/* Close button - top right, always visible */}
       <button
         onClick={(e) => { e.stopPropagation(); onClose(); }}
-        className="absolute top-4 right-4 z-30 p-3 rounded-full border border-foreground/20 bg-foreground/15 text-primary-foreground hover:bg-foreground/25 transition-colors shadow-lg backdrop-blur-sm"
+        className="fixed top-4 right-4 z-[100] p-3 rounded-full border border-white/40 bg-black/60 text-white hover:bg-red-600 hover:border-red-600 transition-colors shadow-2xl backdrop-blur-md"
         aria-label="Fermer"
       >
         <X className="h-7 w-7" strokeWidth={2.5} />
