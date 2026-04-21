@@ -112,6 +112,9 @@ async function tusUpload(
   });
   if (!createRes.ok) {
     const text = await createRes.text().catch(() => "");
+    if (createRes.status === 413) {
+      throw new Error("Le fichier dépasse la limite autorisée du bucket vidéo.");
+    }
     throw new Error(`Resumable upload init failed (${createRes.status}): ${text}`);
   }
   const location = createRes.headers.get("Location");
