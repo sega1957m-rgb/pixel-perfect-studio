@@ -14,7 +14,7 @@ const Layout = () => {
 
   return (
     <div className="grain min-h-screen flex flex-col">
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/70 border-b border-border">
+      <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/70 border-b border-border lb-hide">
         <div className="container flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-2 group">
             <Film className="h-5 w-5 text-primary group-hover:rotate-12 transition-transform" />
