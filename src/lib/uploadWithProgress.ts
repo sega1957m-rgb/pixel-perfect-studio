@@ -117,7 +117,9 @@ async function tusUpload(
   if (!createRes.ok) {
     const text = await createRes.text().catch(() => "");
     if (createRes.status === 413) {
-      throw new Error("Le fichier dépasse la limite autorisée pour une vidéo (18 GB max par fichier).");
+      throw new Error(
+        "Upload refusé par le serveur (413). La limite globale du projet Lovable Cloud est inférieure à la taille du fichier. Augmentez la 'Global file size limit' dans les paramètres Storage du projet (max 50 GB selon le plan).",
+      );
     }
     throw new Error(`Resumable upload init failed (${createRes.status}): ${text}`);
   }
