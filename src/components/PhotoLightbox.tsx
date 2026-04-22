@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 
 interface Photo {
@@ -19,8 +19,6 @@ const PhotoLightbox = ({ photos, index, onClose, onChange }: Props) => {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState<{ x: number; y: number } | null>(null);
-  const [showControls, setShowControls] = useState(true);
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const photo = photos[index];
   const isVideo = photo?.type === "video" || /\.(mp4|webm|mov|ogg)(\?|$)/i.test(photo?.url || "");
@@ -30,27 +28,9 @@ const PhotoLightbox = ({ photos, index, onClose, onChange }: Props) => {
     setPan({ x: 0, y: 0 });
   };
 
-  const scheduleHide = useCallback(() => {
-    if (hideTimer.current) clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => setShowControls(false), 2500);
-  }, []);
-
-  const showAndScheduleHide = useCallback(() => {
-    setShowControls(true);
-    scheduleHide();
-  }, [scheduleHide]);
-
   useEffect(() => {
     reset();
-    showAndScheduleHide();
   }, [index]);
-
-  useEffect(() => {
-    showAndScheduleHide();
-    return () => {
-      if (hideTimer.current) clearTimeout(hideTimer.current);
-    };
-  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -58,15 +38,15 @@ const PhotoLightbox = ({ photos, index, onClose, onChange }: Props) => {
       if (e.key === "ArrowRight") onChange((index + 1) % photos.length);
       if (e.key === "ArrowLeft") onChange((index - 1 + photos.length) % photos.length);
       if (!isVideo) {
-        if (e.key === "+" || e.key === "=") setZoom(z => Math.min(z + 0.5, 5));
-        if (e.key === "-") setZoom(z => Math.max(z - 0.5, 1));
+        if (e.key === "+" || e.key === "=") setZoom((z) => Math.min(z + 0.5, 5));
+        if (e.key === "-") setZoom((z) => Math.max(z - 0.5, 1));
         if (e.key === "0") reset();
       }
-      showAndScheduleHide();
     };
+
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [index, photos.length, showAndScheduleHide, isVideo]);
+  }, [index, isVideo, onClose, onChange, photos.length]);
 
   const next = () => onChange((index + 1) % photos.length);
   const prev = () => onChange((index - 1 + photos.length) % photos.length);
@@ -74,19 +54,19 @@ const PhotoLightbox = ({ photos, index, onClose, onChange }: Props) => {
   const onWheel = (e: React.WheelEvent) => {
     if (isVideo) return;
     const delta = e.deltaY > 0 ? -0.2 : 0.2;
-    setZoom(z => Math.min(5, Math.max(1, z + delta)));
-    showAndScheduleHide();
+    setZoom((z) => Math.min(5, Math.max(1, z + delta)));
   };
 
   const onMouseDown = (e: React.MouseEvent) => {
     if (zoom <= 1) return;
     setDragging({ x: e.clientX - pan.x, y: e.clientY - pan.y });
   };
+
   const onMouseMove = (e: React.MouseEvent) => {
-    showAndScheduleHide();
     if (!dragging) return;
     setPan({ x: e.clientX - dragging.x, y: e.clientY - dragging.y });
   };
+
   const onMouseUp = () => setDragging(null);
 
   const onImageClick = (e: React.MouseEvent) => {
@@ -94,61 +74,37 @@ const PhotoLightbox = ({ photos, index, onClose, onChange }: Props) => {
     if (isVideo) return;
     if (zoom === 1) setZoom(2);
     else reset();
-    showAndScheduleHide();
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center"
-      onClick={onClose}
-      onMouseMove={showAndScheduleHide}
-    >
-      {/* Top bar */}
-      <div
-        className={`fixed top-0 inset-x-0 flex items-center justify-between p-4 pr-24 z-[90] bg-gradient-to-b from-black/70 to-transparent transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-        onClick={e => e.stopPropagation()}
-      >
-        <p className="text-sm text-white/90 tracking-widest">
-          {index + 1} / {photos.length} {photo.title && `· ${photo.title}`}
-        </p>
-        {!isVideo && (
-          <div className="flex items-center gap-2">
-            <button onClick={() => { setZoom(z => Math.max(1, z - 0.5)); showAndScheduleHide(); }} className="p-2 text-white hover:text-primary" aria-label="Zoom -">
-              <ZoomOut className="h-5 w-5" />
-            </button>
-            <span className="text-xs text-white/80 w-12 text-center">{Math.round(zoom * 100)}%</span>
-            <button onClick={() => { setZoom(z => Math.min(5, z + 0.5)); showAndScheduleHide(); }} className="p-2 text-white hover:text-primary" aria-label="Zoom +">
-              <ZoomIn className="h-5 w-5" />
-            </button>
-            <button onClick={() => { reset(); showAndScheduleHide(); }} className="p-2 text-white hover:text-primary" aria-label="Reset">
-              <RotateCcw className="h-5 w-5" />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* X button - DIMA fou9 kolchi */}
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-background/95 backdrop-blur-sm" onClick={onClose}>
       <button
-        onClick={(e) => { e.stopPropagation(); onClose(); }}
-        className={`fixed top-4 right-4 z-[200] p-3 rounded-full border-2 border-white/60 bg-black/80 text-white hover:bg-red-600 hover:border-red-600 transition-all duration-300 shadow-2xl backdrop-blur-md ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+        className="fixed top-4 right-4 z-[340] rounded-full border border-foreground/70 bg-background/85 p-3 text-foreground shadow-[var(--shadow-deep)] backdrop-blur-md transition-transform duration-200 hover:scale-105"
         aria-label="Fermer"
       >
-        <X className="h-6 w-6" strokeWidth={2.5} />
+        <X className="h-7 w-7" strokeWidth={2.75} />
       </button>
 
-      {/* Prev */}
-      <button
-        onClick={(e) => { e.stopPropagation(); prev(); }}
-        className={`fixed left-4 top-1/2 -translate-y-1/2 z-[90] p-3 rounded-full bg-black/60 hover:bg-primary/40 text-white transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-        aria-label="Précédent"
-      >
-        <ChevronLeft className="h-6 w-6" />
-      </button>
+      {photos.length > 1 && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            prev();
+          }}
+          className="fixed left-4 top-1/2 z-[320] -translate-y-1/2 rounded-full border border-border bg-background/80 p-3 text-foreground shadow-[var(--shadow-deep)] backdrop-blur-md transition-transform duration-200 hover:scale-105"
+          aria-label="Précédent"
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+      )}
 
-      {/* Media */}
       <div
-        className="w-full h-full flex items-center justify-center overflow-hidden"
-        onClick={e => e.stopPropagation()}
+        className="flex h-full w-full items-center justify-center overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
         onWheel={onWheel}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
@@ -161,8 +117,8 @@ const PhotoLightbox = ({ photos, index, onClose, onChange }: Props) => {
             src={photo.url}
             controls
             autoPlay
-            className="max-w-full max-h-full object-contain"
-            onClick={e => e.stopPropagation()}
+            className="max-h-full max-w-full object-contain"
+            onClick={(e) => e.stopPropagation()}
           />
         ) : (
           <img
@@ -170,20 +126,42 @@ const PhotoLightbox = ({ photos, index, onClose, onChange }: Props) => {
             alt={photo.title || ""}
             draggable={false}
             onClick={onImageClick}
-            className="max-w-full max-h-full object-contain select-none transition-transform duration-200"
+            className="max-h-full max-w-full select-none object-contain transition-transform duration-200"
             style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
           />
         )}
       </div>
 
-      {/* Next */}
-      <button
-        onClick={(e) => { e.stopPropagation(); next(); }}
-        className={`fixed right-4 top-1/2 -translate-y-1/2 z-[90] p-3 rounded-full bg-black/60 hover:bg-primary/40 text-white transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-        aria-label="Suivant"
-      >
-        <ChevronRight className="h-6 w-6" />
-      </button>
+      {!isVideo && (
+        <div
+          className="fixed bottom-4 left-1/2 z-[320] flex -translate-x-1/2 items-center gap-2 rounded-full border border-border bg-background/85 px-3 py-2 text-foreground shadow-[var(--shadow-deep)] backdrop-blur-md"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button onClick={() => setZoom((z) => Math.max(1, z - 0.5))} className="p-2 transition-colors hover:text-primary" aria-label="Zoom -">
+            <ZoomOut className="h-5 w-5" />
+          </button>
+          <span className="w-12 text-center text-xs">{Math.round(zoom * 100)}%</span>
+          <button onClick={() => setZoom((z) => Math.min(5, z + 0.5))} className="p-2 transition-colors hover:text-primary" aria-label="Zoom +">
+            <ZoomIn className="h-5 w-5" />
+          </button>
+          <button onClick={reset} className="p-2 transition-colors hover:text-primary" aria-label="Reset">
+            <RotateCcw className="h-5 w-5" />
+          </button>
+        </div>
+      )}
+
+      {photos.length > 1 && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            next();
+          }}
+          className="fixed right-4 top-1/2 z-[320] -translate-y-1/2 rounded-full border border-border bg-background/80 p-3 text-foreground shadow-[var(--shadow-deep)] backdrop-blur-md transition-transform duration-200 hover:scale-105"
+          aria-label="Suivant"
+        >
+          <ChevronRight className="h-6 w-6" />
+        </button>
+      )}
     </div>
   );
 };
