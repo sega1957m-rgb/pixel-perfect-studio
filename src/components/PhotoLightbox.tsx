@@ -33,6 +33,16 @@ const PhotoLightbox = ({ photos, index, onClose, onChange }: Props) => {
   }, [index]);
 
   useEffect(() => {
+    document.body.classList.add("viewer-open");
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.classList.remove("viewer-open");
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
       if (e.key === "ArrowRight") onChange((index + 1) % photos.length);

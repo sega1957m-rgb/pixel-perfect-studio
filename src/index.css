@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide top navigation bar while a media viewer (lightbox / video player) is open */
+body.viewer-open .lb-hide { display: none !important; }
+
 /* Cinematic Studio Design System — dark, gold accents */
 @layer base {
   :root {
