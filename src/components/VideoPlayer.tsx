@@ -11,9 +11,11 @@ const VideoPlayer = ({ video, onClose }: Props) => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
+    document.body.classList.add("viewer-open");
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
+      document.body.classList.remove("viewer-open");
     };
   }, [onClose]);
 
