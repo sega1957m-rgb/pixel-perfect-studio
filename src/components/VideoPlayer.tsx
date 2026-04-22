@@ -19,8 +19,12 @@ const VideoPlayer = ({ video, onClose }: Props) => {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur flex items-center justify-center p-4" onClick={onClose}>
-      <button onClick={onClose} className="absolute top-4 right-4 p-2 text-foreground hover:text-primary" aria-label="Fermer">
-        <X className="h-6 w-6" />
+      <button
+        onClick={onClose}
+        className="fixed top-4 right-4 z-[80] rounded-full border border-foreground/70 bg-background/85 p-3 text-foreground shadow-[var(--shadow-deep)] backdrop-blur-md transition-transform duration-200 hover:scale-105 hover:text-primary"
+        aria-label="Fermer"
+      >
+        <X className="h-7 w-7" strokeWidth={2.75} />
       </button>
       <div className="w-full max-w-6xl" onClick={e => e.stopPropagation()}>
         <video

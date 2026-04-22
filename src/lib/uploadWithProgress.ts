@@ -14,6 +14,10 @@ export async function uploadWithProgress(
   file: File,
   onProgress?: (percent: number) => void,
 ): Promise<void> {
+  if (bucket === "videos" && file.size > 18 * 1024 * 1024 * 1024) {
+    throw new Error("La taille maximale par vidéo est de 18 GB.");
+  }
+
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
   const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
   const { data: sessionData } = await supabase.auth.getSession();
@@ -113,7 +117,7 @@ async function tusUpload(
   if (!createRes.ok) {
     const text = await createRes.text().catch(() => "");
     if (createRes.status === 413) {
-      throw new Error("Le fichier dépasse la limite autorisée du bucket vidéo.");
+      throw new Error("Le fichier dépasse la limite autorisée pour une vidéo (18 GB max par fichier).");
     }
     throw new Error(`Resumable upload init failed (${createRes.status}): ${text}`);
   }
