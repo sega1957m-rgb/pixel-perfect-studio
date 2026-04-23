@@ -1,7 +1,7 @@
 // Edge function: generates a presigned PUT URL for Cloudflare R2 (S3-compatible).
 // The browser then uploads the file directly to R2, bypassing Lovable Cloud size limits.
-import { corsHeaders } from "@supabase/supabase-js/cors";
-import { createClient } from "@supabase/supabase-js";
+import { corsHeaders } from "npm:@supabase/supabase-js/cors";
+import { createClient } from "npm:@supabase/supabase-js";
 
 const ACCOUNT_ID = Deno.env.get("R2_ACCOUNT_ID")!;
 const ACCESS_KEY = Deno.env.get("R2_ACCESS_KEY_ID")!;
