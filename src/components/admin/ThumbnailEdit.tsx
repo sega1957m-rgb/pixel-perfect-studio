@@ -24,8 +24,7 @@ const ThumbnailEdit = ({ bucket, currentUrl, onUploaded, label = "Miniature" }: 
     setProgress(0);
     try {
       const path = `${crypto.randomUUID()}-${file.name}`;
-      await uploadWithProgress(bucket, path, file, setProgress);
-      const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(path);
+      const { publicUrl } = await uploadWithProgress(bucket, path, file, setProgress);
       await onUploaded(publicUrl, path);
       toast.success(`${label} mise à jour`);
     } catch (err: any) {

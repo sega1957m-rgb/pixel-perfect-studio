@@ -130,10 +130,9 @@ const Admin = () => {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const path = `${selectedAlbumId}/${crypto.randomUUID()}-${file.name}`;
-        await uploadWithProgress("photos", path, file, (p) =>
+        const { publicUrl } = await uploadWithProgress("photos", path, file, (p) =>
           setPhotoProgress({ current: i + 1, total, percent: p })
         );
-        const { data: { publicUrl } } = supabase.storage.from("photos").getPublicUrl(path);
         if (!firstUrl) firstUrl = publicUrl;
         const { error: dbErr } = await supabase.from("photos").insert({
           album_id: selectedAlbumId, url: publicUrl, storage_path: path, title: file.name,
@@ -175,15 +174,14 @@ const Admin = () => {
     setThumbProgress(0);
     try {
       const vPath = `${crypto.randomUUID()}-${videoFile.name}`;
-      await uploadWithProgress("videos", vPath, videoFile, setVideoProgress);
-      const { data: { publicUrl: videoUrl } } = supabase.storage.from("videos").getPublicUrl(vPath);
+      const { publicUrl: videoUrl } = await uploadWithProgress("videos", vPath, videoFile, setVideoProgress);
 
       let thumbUrl: string | null = null;
       let thumbPath: string | null = null;
       if (thumbFile) {
         thumbPath = `${crypto.randomUUID()}-${thumbFile.name}`;
-        await uploadWithProgress("thumbnails", thumbPath, thumbFile, setThumbProgress);
-        thumbUrl = supabase.storage.from("thumbnails").getPublicUrl(thumbPath).data.publicUrl;
+        const tRes = await uploadWithProgress("thumbnails", thumbPath, thumbFile, setThumbProgress);
+        thumbUrl = tRes.publicUrl;
       }
 
       const { data: inserted, error: dbErr } = await supabase.from("videos").insert({

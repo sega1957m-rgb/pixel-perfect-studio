@@ -43,8 +43,8 @@ const StudioManager = ({ studios, onChange }: Props) => {
       let coverUrl: string | null = null;
       if (coverFile) {
         const path = `${crypto.randomUUID()}-${coverFile.name}`;
-        await uploadWithProgress("studio-covers", path, coverFile, setProgress);
-        coverUrl = supabase.storage.from("studio-covers").getPublicUrl(path).data.publicUrl;
+        const res = await uploadWithProgress("studio-covers", path, coverFile, setProgress);
+        coverUrl = res.publicUrl;
       }
       const { error } = await supabase.from("studios").insert({
         name, description: desc || null, cover_url: coverUrl,
