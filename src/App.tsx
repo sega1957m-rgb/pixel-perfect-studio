@@ -13,6 +13,7 @@ import Videos from "./pages/Videos";
 import Studios from "./pages/Studios";
 import StudioView from "./pages/StudioView";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -29,6 +30,7 @@ const App = () => (
             <Route element={<Layout />}>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/photos" element={<RequireAuth><Photos /></RequireAuth>} />
               <Route path="/photos/:id" element={<RequireAuth><AlbumView /></RequireAuth>} />
               <Route path="/videos" element={<RequireAuth><Videos /></RequireAuth>} />
