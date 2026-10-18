@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Play, Film } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
+import MediaImage from "@/components/MediaImage";
 import StudioFilterSelect from "@/components/StudioFilterSelect";
 import Paginated from "@/components/Paginated";
 import { cn } from "@/lib/utils";
@@ -48,7 +49,7 @@ const Videos = () => {
       const linkMap = new Map<string, string[]>();
       ((links as any[]) || []).forEach(l => {
         if (!linkMap.has(l.video_id)) linkMap.set(l.video_id, []);
-        linkMap.get(l.video_id)!.push(l.studio_id);
+        linkMap.get(l.video_id)?.push(l.studio_id);
       });
       setVideos(((vids as Video[]) || []).map(v => ({ ...v, studio_ids: linkMap.get(v.id) || [] })));
       setStudios((studs as StudioOpt[]) || []);
@@ -130,7 +131,7 @@ const Videos = () => {
               <button key={v.id} onClick={() => setActive(v)} className="group text-left">
                 <div className="aspect-video bg-card rounded-sm overflow-hidden relative border border-border">
                   {v.thumbnail_url ? (
-                    <img src={v.thumbnail_url} alt={v.title} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                    <MediaImage src={v.thumbnail_url} alt={v.title} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted-foreground"><Film className="h-12 w-12" /></div>
                   )}

@@ -1,0 +1,1 @@
+- Resolve private R2 media URLs through authenticated, expiring GET signatures at display time; keep permanent object URLs in saved records so credentials never enter stored media links.
