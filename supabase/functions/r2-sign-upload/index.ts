@@ -44,7 +44,7 @@ function encodePath(path: string): string {
   return path.split("/").map(encodeRfc3986).join("/");
 }
 
-async function presignPutUrl(objectKey: string, expiresSeconds = 900): Promise<string> {
+async function presignUrl(objectKey: string, method: "GET" | "PUT", expiresSeconds = 900): Promise<string> {
   const now = new Date();
   const amzDate = now.toISOString().replace(/[-:]|\.\d{3}/g, ""); // YYYYMMDDTHHMMSSZ
   const dateStamp = amzDate.slice(0, 8);
@@ -67,7 +67,7 @@ async function presignPutUrl(objectKey: string, expiresSeconds = 900): Promise<s
     .join("&");
 
   const canonicalRequest = [
-    "PUT",
+    method,
     canonicalUri,
     canonicalQuery,
     `host:${HOST}\n`,
@@ -121,6 +121,17 @@ Deno.serve(async (req) => {
       });
     }
 
+    const body = await req.json().catch(() => ({}));
+    const action = body.action ?? "upload";
+    const objectKey = typeof body.objectKey === "string" ? body.objectKey.replace(/^\/+/, "") : "";
+    if (!["read", "upload"].includes(action) || !/^(videos|photos|thumbnails|studio-covers)\/.+/.test(objectKey) || objectKey.length > 1024 || objectKey.split("/").some(part => part === "." || part === "..")) {
+      return new Response(JSON.stringify({ error: "Invalid media request" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    if (action === "read") {
+      const readUrl = await presignUrl(objectKey, "GET", 86400);
+      return new Response(JSON.stringify({ readUrl }), { headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" } });
+    }
+
     const { data: isAdmin } = await supabase.rpc("has_role", {
       _user_id: userData.user.id,
       _role: "admin",
@@ -132,17 +143,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const body = await req.json().catch(() => ({}));
-    const objectKey = String(body.objectKey ?? "").replace(/^\/+/, "");
-    if (!objectKey || objectKey.length > 1024) {
-      return new Response(JSON.stringify({ error: "Invalid objectKey" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const uploadUrl = await presignPutUrl(objectKey, 3600);
-    const publicUrl = PUBLIC_URL ? `${PUBLIC_URL}/${objectKey.split("/").map(encodeURIComponent).join("/")}` : "";
+    const uploadUrl = await presignUrl(objectKey, "PUT", 3600);
+    const encodedKey = encodePath(objectKey);
+    const publicUrl = PUBLIC_URL ? `${PUBLIC_URL}/${encodedKey}` : `https://${HOST}/${BUCKET}/${encodedKey}`;
 
     return new Response(
       JSON.stringify({ uploadUrl, publicUrl, objectKey }),

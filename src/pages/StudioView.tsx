@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Building2, Film, ImageIcon, Play } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
+import MediaImage from "@/components/MediaImage";
 
 interface Studio {
   id: string;
@@ -81,7 +82,7 @@ const StudioView = () => {
               <button key={v.id} onClick={() => setActive(v)} className="group text-left">
                 <div className="aspect-video bg-card rounded-sm overflow-hidden relative border border-border">
                   {v.thumbnail_url ? (
-                    <img src={v.thumbnail_url} alt={v.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                    <MediaImage src={v.thumbnail_url} alt={v.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted-foreground"><Film className="h-12 w-12" /></div>
                   )}

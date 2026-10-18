@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { uploadWithProgress } from "@/lib/uploadWithProgress";
 import { Progress } from "@/components/ui/progress";
+import MediaImage from "@/components/MediaImage";
 
 interface Props {
   bucket: "thumbnails" | "studio-covers" | "photos";
@@ -39,7 +40,7 @@ const ThumbnailEdit = ({ bucket, currentUrl, onUploaded, label = "Miniature" }: 
   return (
     <div className="flex items-center gap-3">
       {currentUrl ? (
-        <img src={currentUrl} alt="" className="h-12 w-16 object-cover rounded-sm border border-border" />
+        <MediaImage src={currentUrl} alt="" className="h-12 w-16 object-cover rounded-sm border border-border" />
       ) : (
         <div className="h-12 w-16 flex items-center justify-center rounded-sm border border-dashed border-border text-muted-foreground">
           <ImageIcon className="h-4 w-4" />

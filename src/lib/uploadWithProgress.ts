@@ -28,7 +28,7 @@ export async function uploadWithProgress(
     uploadUrl?: string;
     publicUrl?: string;
   };
-  if (!uploadUrl) throw new Error("Signed URL missing");
+  if (!uploadUrl || !publicUrl) throw new Error("Le lien du fichier est manquant. L’envoi a été annulé pour éviter un média inaccessible.");
 
   // 2. PUT the file directly to R2 with XHR (gives us progress events)
   await new Promise<void>((resolve, reject) => {
@@ -53,5 +53,5 @@ export async function uploadWithProgress(
     xhr.send(file);
   });
 
-  return { publicUrl: publicUrl ?? "", objectKey };
+  return { publicUrl, objectKey };
 }

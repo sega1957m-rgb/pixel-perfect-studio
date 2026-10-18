@@ -1,0 +1,2 @@
+- [ ] Restore access to existing R2 video files and thumbnails without re-uploading.
+- [ ] Verify authenticated thumbnail rendering and video playback.
