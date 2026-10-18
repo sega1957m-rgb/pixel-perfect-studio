@@ -1,2 +1,3 @@
-- [ ] Restore access to existing R2 video files and thumbnails without re-uploading.
-- [ ] Verify authenticated thumbnail rendering and video playback.
+- [x] Restore access to existing R2 video files and thumbnails without re-uploading.
+- [x] Verify authenticated thumbnail rendering and video file access (HTTP 206, H.264/AAC confirmed).
+- [ ] Verify decoded video playback: blocked by the test browser lacking H.264 support; requires a compatible browser.
